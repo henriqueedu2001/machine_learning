@@ -3,9 +3,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-class HabitClassifier:    
-    def __init__(self, train_dataset, test_dataset):
-        """_summary_
+class HabitClassifier:
+    """Classificador binário de hábitos noturnos dos pássaros
+    """
+    
+    def __init__(self, train_dataset: pd.DataFrame, test_dataset: pd.DataFrame, k: int):
+        """Classe 
 
         Args:
             train_dataset (_type_): _description_
@@ -13,14 +16,47 @@ class HabitClassifier:
         """
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
+        self.k = k
+    
+    
+    def predict(self, bird_activity_time):
+        classification_series = []
         
+        for i in self.train_dataset.index:
+            sample_activity_time = self.train_dataset['activity_time'][i]
+            sample_habit = self.train_dataset['habit'][i]
+            
+            habit_time_dist = self.time_distance(bird_activity_time, sample_activity_time)
+            
+            new_classification_row = {
+                'habit_time_distance': habit_time_dist,
+                'sample_habit': sample_habit
+            }
+            
+            classification_series.append(new_classification_row)
+        
+        classification_df = pd.DataFrame(classification_series)
+        k_nearest = classification_df.nsmallest(self.k, 'habit_time_distance')
+        most_frequent_habit = k_nearest['sample_habit'].mode()[0]
+        
+        return most_frequent_habit
+        
+    def get_k_nearest_samples(self, classification_dataframe: pd.DataFrame, column_name: str):
+        return classification_dataframe.nsmallest(self.k, column_name)
+
+    def get_predominant_habit(self, classification_dataframe: pd.DataFrame):
+        classification_dataframe
+
+    def time_distance(self, time_a: float, time_b: float):
+        return np.absolute(time_a - time_b)
+    
+    
     def get_dataset_info(self):
-        print(self.train_dataset.shape)
-        print(self.test_dataset.shape)
+        print(self.train_dataset.iloc[:]['activity_time'])
                 
         
 class DatasetHandler:
-    """_summary_
+    """Ferramenta útil para lidar com datasets
     """
     
     def get_dataframe(relative_path: str) -> pd.DataFrame:
@@ -71,9 +107,10 @@ class DatasetHandler:
 def test():
     df = DatasetHandler.get_dataframe('passaros_noturnos.csv')
     train_df, test_df = DatasetHandler.train_test_split(df, 0.7)
+    k_parameter = 5
     
-    habit_classifier = HabitClassifier(train_df, test_df)
-    habit_classifier.get_dataset_info()
-    
+    habit_classifier = HabitClassifier(train_df, test_df, k_parameter)
+    h = habit_classifier.predict(14.0)
+    print(h)
     
 test()
